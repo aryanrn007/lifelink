@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+/* Custom theme colors for LifeLink emergency app */
+@theme {
+  --color-emergency: #E11D48;
+  --color-emergency-dark: #9F1239;
+  --color-bg-dark: #0B0B0F;
+  --color-bg-card: #1A1A1F;
+}
