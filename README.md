@@ -43,7 +43,13 @@ In emergency situations, every second counts. Traditional emergency services oft
 
 ## Architecture
 
-[Architecture documentation to be added]
+The Firestore data model is documented in [DATA_MODEL.md](./DATA_MODEL.md). This schema defines the three main collections:
+
+- **emergencies**: Emergency requests with caller info, location, status, and responder list
+- **responders**: Volunteer profiles with skills, on-duty status, and real-time location
+- **resources**: Fixed emergency resources like AEDs and first-aid kits
+
+Phase 2 (data model) is complete. Subsequent phases (3-5) will build on this schema without field renames.
 
 ## Team Contributions
 
