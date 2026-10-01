@@ -22,7 +22,10 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // Sign in anonymously on app load for temporary user sessions
-// This allows unauthenticated users to interact with Firebase with limited permissions
+// This allows unauthenticated users to interact with Firebase with limited permissions.
+// IMPORTANT: Firestore must be in test mode or have rules allowing anonymous auth
+// reads/writes. Check Firestore Rules tab in Firebase Console if getting
+// "Missing or insufficient permissions" errors.
 signInAnonymously(auth).catch((error) => {
   console.error('Anonymous sign-in failed:', error);
 });
