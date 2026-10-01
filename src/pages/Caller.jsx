@@ -8,6 +8,7 @@ import {
   cancelEmergency,
   resolveEmergency
 } from '../lib/emergencies';
+import { subscribeToResponderDoc } from '../lib/responders';
 import EmergencyTypeGrid from '../components/EmergencyTypeGrid';
 import HoldButton from '../components/HoldButton';
 import StatusBanner from '../components/StatusBanner';
@@ -50,11 +51,13 @@ export default function Caller() {
   const [emergencyData, setEmergencyData] = useState(null);
   const [locationError, setLocationError] = useState(null);
   const [isRetryingLocation, setIsRetryingLocation] = useState(false);
+  const [responderLocations, setResponderLocations] = useState({});
   
   // Refs for cleanup
   const unsubscribeRef = useRef(null);
   const watchIdRef = useRef(null);
   const lastLocationUpdateRef = useRef(0);
+  const responderUnsubscribesRef = useRef([]);
   
   // Check for debug mode in URL
   const isDebugMode = new URLSearchParams(window.location.search).get('debug') === '1';
@@ -117,6 +120,38 @@ export default function Caller() {
       stopLocationTracking();
     };
   }, [appState, emergencyData?.status]);
+
+  // Subscribe to responder docs for live location updates
+  useEffect(() => {
+    if (appState === STATE_ACTIVE && emergencyData?.responders) {
+      // Clear previous subscriptions
+      responderUnsubscribesRef.current.forEach(unsub => unsub());
+      responderUnsubscribesRef.current = [];
+
+      // Subscribe to each responder's document
+      emergencyData.responders.forEach((responder) => {
+        const unsub = subscribeToResponderDoc(responder.uid, (error, snapshot, data) => {
+          if (error) {
+            console.error('Responder subscription error:', error);
+            return;
+          }
+          if (data && data.location) {
+            setResponderLocations(prev => ({
+              ...prev,
+              [responder.uid]: data.location
+            }));
+          }
+        });
+        responderUnsubscribesRef.current.push(unsub);
+      });
+    }
+
+    return () => {
+      // Clean up all responder subscriptions
+      responderUnsubscribesRef.current.forEach(unsub => unsub());
+      responderUnsubscribesRef.current = [];
+    };
+  }, [appState, emergencyData?.responders]);
 
   // Start watching position and update Firestore every 10s
   const startLocationTracking = () => {
@@ -401,13 +436,19 @@ export default function Caller() {
           {/* Map */}
           <LiveMap
             callerLocation={emergencyData.location}
-            responders={emergencyData.responders}
+            responders={emergencyData.responders?.map(r => ({
+              ...r,
+              location: responderLocations[r.uid] || r.location
+            })) || []}
           />
 
           {/* Responder list */}
           {emergencyData.responders && emergencyData.responders.length > 0 && (
             <ResponderList
-              responders={emergencyData.responders}
+              responders={emergencyData.responders.map(r => ({
+                ...r,
+                location: responderLocations[r.uid] || r.location
+              }))}
               callerLocation={emergencyData.location}
             />
           )}
